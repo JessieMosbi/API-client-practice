@@ -5,6 +5,9 @@ namespace Jcheng\DataApiClient;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Promise;
+use GuzzleHttp\Pool;
+use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\Exception\RequestException;
 
 class Client
 {
@@ -91,46 +94,47 @@ class Client
         return $response;
     }
 
-    public function getDataAsync($token)
-    {
-        $client = new GuzzleClient([
-            'base_uri' => self::$baseURL
-        ]);
-        $headers = ['Authorization' => 'Bearer ' . $token];
-        $request = new Request('POST', 'test', $headers);
-
-        $promise = $client->sendAsync($request)
-          ->then(function ($response) {
-              echo $response->getBody();
-          });
-        $promise->wait();
-    }
-
     public function getDataAsyncMultiple($token)
     {
         $client = new GuzzleClient([
             'base_uri' => self::$baseURL
         ]);
 
-        // Initiate each request but do not block
-        $promises = [];
-        for ($i = 1; $i <= 2; $i++) {
-            $promises['test-' . $i] = $client->requestAsync('POST', 'test', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $token
-                ]
-            ]);
-        }
+        // $requests = function ($total) use ($token) {
+        //     for ($i = 0; $i < $total; $i++) {
+        //         yield new Request('POST', 'test', ['Authorization' => 'Bearer ' . $token]);
+        //     }
+        // };
 
-        // Wait for the requests to complete, even if some of them fail
-        $responses = Promise\Utils::settle($promises)->wait();
+        $requests = function ($total) use ($client, $token) {
+            for ($i = 0; $i < $total; $i++) {
+                yield function () use ($client, $token) {
+                    return $client->requestAsync('POST', 'test', [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $token
+                        ]
+                    ]);
+                };
+            }
+        };
 
-        // Values returned above are wrapped in an array with 2 keys
-        // "state" (either fulfilled or rejected) and "value" (contains the response)
-        echo $responses['test-1']['state'] . '<br>'; // returns "fulfilled"
-        echo $responses['test-1']['value']->getStatusCode() . '<br>';
-        echo $responses['test-1']['value']->getHeaderLine('content-type') . '<br><br>';
-        echo 'test-1: ' . $responses['test-1']['value']->getBody() . '<br>';
-        echo 'test-2: ' . $responses['test-2']['value']->getBody() . '<br>';
+        $pool = new Pool($client, $requests(5), [
+            'concurrency' => 2,
+            'fulfilled' => function (Response $response, $index) {
+                // this is delivered each successful response
+                echo $response->getBody() . '<br>';
+            },
+            'rejected' => function (RequestException $reason, $index) {
+                // this is delivered each failed request
+                print_r($reason);
+                echo '<br>';
+            },
+        ]);
+
+        // Initiate the transfers and create a promise
+        $promise = $pool->promise();
+
+        // Force the pool of requests to complete.
+        $promise->wait();
     }
 }
