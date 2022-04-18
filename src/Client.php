@@ -51,4 +51,41 @@ class Client
 
         $this->response = $token;
     }
+
+    public function getData($token)
+    {
+        if ($this->type === 'curl') {
+            $url = self::$baseURL . 'test';
+            $headerData = [
+                "Content-Type: application/json",
+                "Authorization: Bearer " . $token
+            ];
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headerData);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+            $response = curl_exec($ch);
+            $this->statusCode = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+            curl_close($ch);
+        } elseif ($this->type === 'guzzle') {
+            $client = new GuzzleClient([
+                'base_uri' => self::$baseURL,
+            ]);
+
+            $response = $client->request('POST', 'test', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $token
+                ]
+            ]);
+
+            $this->statusCode = $response->getStatusCode();
+            $response = $response->getBody();
+        }
+
+        // return json_decode($response, true);
+        return $response;
+    }
 }

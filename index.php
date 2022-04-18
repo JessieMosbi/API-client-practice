@@ -14,11 +14,15 @@ try {
     $dotenv->required('ACCOUNT')->notEmpty();
     $dotenv->required('PASSWORD')->notEmpty();
 
-    $client = new Client('guzzle');
+    $client = new Client('curl');
     $client->login($_ENV['ACCOUNT'], $_ENV['PASSWORD']);
 
+    $token = $client->response;
     echo 'status code: ' . $client->statusCode . '<br>';
-    echo 'token: ' . $client->response . '<br>';
+    echo 'token: ' . $token . '<br>';
+    echo '<br><br>';
+    echo 'status code code: ' . $client->statusCode . '<br>';
+    echo 'data: ' . $client->getData($token);
 } catch (ValidationException $e) {
     echo "Please check your environment file: ";
     echo $e->getMessage();
