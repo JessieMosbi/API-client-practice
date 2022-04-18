@@ -3,6 +3,7 @@
 namespace Jcheng\DataApiClient;
 
 use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Psr7\Request;
 
 class Client
 {
@@ -87,5 +88,20 @@ class Client
 
         // return json_decode($response, true);
         return $response;
+    }
+
+    public function getDataAsync($token)
+    {
+        $client = new GuzzleClient([
+            'base_uri' => self::$baseURL
+        ]);
+        $headers = ['Authorization' => 'Bearer ' . $token];
+        $request = new Request('POST', 'test', $headers);
+
+        $promise = $client->sendAsync($request)
+          ->then(function ($response) {
+              echo $response->getBody();
+          });
+        $promise->wait();
     }
 }
