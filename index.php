@@ -4,15 +4,21 @@ ini_set('display_errors', 'on');
 error_reporting(E_ALL);
 
 use Dotenv\Exception\ValidationException;
+use Jcheng\DataApiClient\Client;
 
 require __DIR__ . '/vendor/autoload.php';
 
 try {
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
     $dotenv->load();
-
     $dotenv->required('ACCOUNT')->notEmpty();
     $dotenv->required('PASSWORD')->notEmpty();
+
+    $client = new Client('guzzle');
+    $client->login($_ENV['ACCOUNT'], $_ENV['PASSWORD']);
+
+    echo 'status code: ' . $client->statusCode . '<br>';
+    echo 'token: ' . $client->response . '<br>';
 } catch (ValidationException $e) {
     echo "Please check your environment file: ";
     echo $e->getMessage();
