@@ -4,6 +4,7 @@ namespace Jcheng\DataApiClient;
 
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Promise;
 
 class Client
 {
@@ -103,5 +104,33 @@ class Client
               echo $response->getBody();
           });
         $promise->wait();
+    }
+
+    public function getDataAsyncMultiple($token)
+    {
+        $client = new GuzzleClient([
+            'base_uri' => self::$baseURL
+        ]);
+
+        // Initiate each request but do not block
+        $promises = [];
+        for ($i = 1; $i <= 2; $i++) {
+            $promises['test-' . $i] = $client->requestAsync('POST', 'test', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $token
+                ]
+            ]);
+        }
+
+        // Wait for the requests to complete, even if some of them fail
+        $responses = Promise\Utils::settle($promises)->wait();
+
+        // Values returned above are wrapped in an array with 2 keys
+        // "state" (either fulfilled or rejected) and "value" (contains the response)
+        echo $responses['test-1']['state'] . '<br>'; // returns "fulfilled"
+        echo $responses['test-1']['value']->getStatusCode() . '<br>';
+        echo $responses['test-1']['value']->getHeaderLine('content-type') . '<br><br>';
+        echo 'test-1: ' . $responses['test-1']['value']->getBody() . '<br>';
+        echo 'test-2: ' . $responses['test-2']['value']->getBody() . '<br>';
     }
 }

@@ -23,7 +23,7 @@ try {
     echo '<br><br>';
     echo 'status code code: ' . $client->statusCode . '<br>';
     // echo 'data: ' . $client->getData($token);
-    $client->getDataAsync($token);
+    $client->getDataAsyncMultiple($token);
 } catch (ValidationException $e) {
     echo "Please check your environment file: ";
     echo $e->getMessage();
