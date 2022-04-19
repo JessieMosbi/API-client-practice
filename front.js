@@ -65,17 +65,34 @@ const ApiHelper = {
 const email = 'hamy820326@gmail.com'
 const password = '12345678';
 
+const frontView = {
+  async init (email, password) {
+    try {
+      ApiHelper.init()
 
-
-(async (email, password) => {
-  try {
-    ApiHelper.init()
-
-    if (await ApiHelper.getAccessToken(email, password)) {
-      const result = await ApiHelper.getTestData()
-      console.log(result)
+      if (await ApiHelper.getAccessToken(email, password)) {
+        const result = await ApiHelper.getTestData()
+        console.log(result)
+      }
+    } catch (err) {
+      console.log(err)
     }
-  } catch (err) {
-    console.log(err)
   }
-})(email, password);
+}
+
+// 沒穿帳密則 Server return 404 好像不是 fail json???
+frontView.init(email, password)
+
+
+  // (async (email, password) => {
+  //   try {
+  //     ApiHelper.init()
+
+  //     if (await ApiHelper.getAccessToken(email, password)) {
+  //       const result = await ApiHelper.getTestData()
+  //       console.log(result)
+  //     }
+  //   } catch (err) {
+  //     console.log(err)
+  //   }
+  // })(email, password);
