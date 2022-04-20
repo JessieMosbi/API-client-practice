@@ -21,18 +21,20 @@ const ApiHelper = {
       console.log(error.response)
       if (error.response.status === 401 && error.response.data.message === 'The token expired.') {
         console.log('first get data request: fail, with token expired.')
-        // FIXME: 這邊應該不用用 try catch 包了？因為最外層的 frontView.init() 就有包
-        // try {
-        //   await this.getAccessToken()
-        //   error = 'already re-get access token'
-        //   console.log(`set error message: ${error}`)
-        // } catch (err) {
-        //   console.log('interceptors catch error')
-        //   error = err
-        // }
-        await this.getAccessToken()
+
+        const { status, result } = (await this.getAccessToken()).data
+        if (status === 'success') {
+          localStorage.setItem('token', result.access_token)
+          console.log('after getting token: set to local storage')
+
+          // Alter defaults after instance has been created
+          this.instance.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`
+          console.log('after getting token: set to axios header')
+        }
+
         error = 'already re-get access token'
         console.log(`interceptors: set message to get data func: ${error}`)
+        // return Promise.resolve(error);
       }
 
       return Promise.reject(error);
@@ -45,31 +47,39 @@ const ApiHelper = {
       email: this.email,
       password: this.password
     })
-      .then(response => {
-        console.log(`get token request status is ${response.status}`)
-        return response.data
-      })
-      .then(({ status, result }) => {
-        if (status === 'success') {
-          localStorage.setItem('token', result.access_token)
-          console.log('after getting token: set to local storage')
+    // .then(response => {
+    //   console.log(`get token request status is ${response.status}`)
+    //   return response.data
+    // })
+    // .then(({ status, result }) => {
+    //   if (status === 'success') {
+    //     localStorage.setItem('token', result.access_token)
+    //     console.log('after getting token: set to local storage')
 
-          // Alter defaults after instance has been created
-          this.instance.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`
-          console.log('after getting token: set to axios header')
+    //     // Alter defaults after instance has been created
+    //     this.instance.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`
+    //     console.log('after getting token: set to axios header')
 
-          return true
-        }
-      })
-      .catch(err => false)
+    //     return true
+    //   }
+    // })
+    // .catch(err => false)
   },
   async checkToken () {
     console.log('start to check token')
 
-    // TODO: 多個 await 可以用同一個 try/catch 包起來嗎？（在 AC 好像有問過...）
     if (!localStorage.getItem('token')) {
       console.log('token is not exist in local storage')
-      await this.getAccessToken()
+
+      const { status, result } = (await this.getAccessToken()).data
+      if (status === 'success') {
+        localStorage.setItem('token', result.access_token)
+        console.log('after getting token: set to local storage')
+
+        // Alter defaults after instance has been created
+        this.instance.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`
+        console.log('after getting token: set to axios header')
+      }
     }
 
     // Alter defaults after instance has been created
@@ -90,13 +100,18 @@ const ApiHelper = {
     // 結論：只要我呼叫的 function 裡面有包含 async code，如果我希望他在我這裡按照「同步」的方式進行，則要寫 await！（不管他自己內部 code 如何處理、是否以同步的方式執行）
     await this.checkToken()
     console.log('after check token')
-    const result = await request()
-    if (result === 'already re-get access token') {
-      const result = await request()
-      console.log('second get data request finished')
+
+    try {
+      let result = await request()
+      if (result === 'already re-get access token') {
+        console.log(`receive message: ${result}`)
+        result = await request()
+        console.log('second get data request finished')
+      }
       return result
+    } catch (error) {
+      console.warn(error)
     }
-    else return result
   }
 }
 
@@ -109,8 +124,7 @@ const frontView = {
       const result = await ApiHelper.getData('test')
       console.log(result)
     } catch (err) {
-      console.log('frontVirw catch error')
-      console.log(err)
+      console.warn(err)
     }
   }
 }
@@ -119,6 +133,5 @@ try {
   // TODO: 沒傳帳密則 Server return 404 好像不是 fail json???
   frontView.init()
 } catch (error) {
-  console.log('top try/cache level cache error')
-  console.log(error)
+  console.warn(error)
 }
