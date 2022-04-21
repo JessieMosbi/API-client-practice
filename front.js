@@ -7,7 +7,8 @@ const ApiHelper = {
   init () {
     console.log('axios init')
     this.instance = axios.create({
-      baseURL: 'http://dataapimanage:8888'
+      baseURL: 'http://dataapimanage:8888',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
     });
 
     // Add a response interceptor
