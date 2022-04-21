@@ -24,12 +24,7 @@ const ApiHelper = {
 
         const { status, result } = (await this.getAccessToken()).data
         if (status === 'success') {
-          localStorage.setItem('token', result.access_token)
-          console.log('after getting token: set to local storage')
-
-          // Alter defaults after instance has been created
-          this.instance.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`
-          console.log('after getting token: set to axios header')
+          this.setAccessToken(result.access_token)
         }
 
         error = 'already re-get access token'
@@ -65,6 +60,16 @@ const ApiHelper = {
     // })
     // .catch(err => false)
   },
+  setAccessToken (token) {
+    console.log('start to setting token')
+
+    localStorage.setItem('token', token)
+    console.log('finished setting to local storage')
+
+    // Alter defaults after instance has been created
+    this.instance.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`
+    console.log('afinished setting to axios header')
+  },
   async checkToken () {
     console.log('start to check token')
 
@@ -73,12 +78,7 @@ const ApiHelper = {
 
       const { status, result } = (await this.getAccessToken()).data
       if (status === 'success') {
-        localStorage.setItem('token', result.access_token)
-        console.log('after getting token: set to local storage')
-
-        // Alter defaults after instance has been created
-        this.instance.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`
-        console.log('after getting token: set to axios header')
+        this.setAccessToken(result.access_token)
       }
     }
 
