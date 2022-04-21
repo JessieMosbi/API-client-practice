@@ -19,18 +19,51 @@ const ApiHelper = {
     }, async (error) => {
       // Any status codes that falls outside the range of 2xx cause this function to trigger
       // Do something with response error
+
+      // if (error.response.status === 401 && error.response.data.message === 'The token expired.') {
+      //   console.log('first get data request: fail, with token expired.')
+
+      //   const { status, result } = (await this.getAccessToken()).data
+      //   if (status === 'success') {
+      //     this.setAccessToken(result.access_token)
+      //   }
+
+      //   error = 'already re-get access token'
+      //   console.log(`interceptors: set message to get data func: ${error}`)
+      //   // return Promise.resolve(error);
+      // }
+
       console.log(error.response)
-      if (error.response.status === 401 && error.response.data.message === 'The token expired.') {
-        console.log('first get data request: fail, with token expired.')
 
-        const { status, result } = (await this.getAccessToken()).data
-        if (status === 'success') {
-          this.setAccessToken(result.access_token)
-        }
+      const { status, message } = error.response.data
+      switch (error.response.status) {
+        case 400:
+          error = 'email and account incorrect'
+          break;
 
-        error = 'already re-get access token'
-        console.log(`interceptors: set message to get data func: ${error}`)
-        // return Promise.resolve(error);
+        case 401:
+          if (message === 'The token expired.') {
+            console.log('first get data request: fail, with token expired.')
+
+            const { status, result } = (await this.getAccessToken()).data
+            if (status === 'success') {
+              this.setAccessToken(result.access_token)
+            }
+
+            error = 'already re-get access token'
+            console.log(`interceptors: set message to get data func: ${error}`)
+            // return Promise.resolve(error);
+          } else {
+            error = 'token unauthorized, please login again'
+          }
+          break;
+
+        case 404:
+          error = 'request url is invalid'
+          break;
+
+        default:
+          break;
       }
 
       return Promise.reject(error);
