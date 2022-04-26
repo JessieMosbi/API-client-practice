@@ -1,6 +1,6 @@
 const ApiHelper = {
   // TODO: email and password inserted by user in the future
-  email: 'hamy820326@gmail.com',
+  email: 'test@gmail.com',
   password: '12345678',
   instance: null,
   init () {
